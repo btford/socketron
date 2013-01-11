@@ -77,6 +77,21 @@ describe('State', function () {
 
       n.should.equal(0);
     });
+
+    it('should allow you to || event names', function () {
+      var n = 0;
+
+      s.on('whatever || whoever', function () {
+        n += 1;
+      });
+
+      s.enter(sock);
+
+      sock.emit('whatever');
+      sock.emit('whoever');
+
+      n.should.equal(2);
+    });
   });
 
 

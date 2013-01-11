@@ -14,6 +14,7 @@ io.sockets.on('connection', function (socket) {
   socket.on('the other thing', function (...) { ... });
   // ...
 });
+```
 
 Didn't scale very well.
 

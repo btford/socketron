@@ -1,6 +1,6 @@
 {
   "name": "socketron",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "routes for sockets",
   "main": "index.js",
   "scripts": {

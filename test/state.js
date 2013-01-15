@@ -32,7 +32,7 @@ describe('State', function () {
 
       sock = new SocketMock();
 
-      s.enter(sock);
+      s.add(sock);
       sock.emit('whatever');
       n.should.equal(1);
     });
@@ -67,7 +67,7 @@ describe('State', function () {
     it('should be replace old listeners when two are bound to the same event name', function () {
       var n = 0;
       
-      s.enter(sock);
+      s.add(sock);
 
       // the first "whatever" shouldn't run
       s.on('whatever', function () {
@@ -80,6 +80,19 @@ describe('State', function () {
       n.should.equal(0);
     });
 
+    it('should pass message, state, socket to the listener', function () {
+      
+      s.add(sock);
+
+      s.on('whatever', function (message, state, socket) {
+        message.should.equal('something');
+        state.should.equal(s);
+        socket.should.equal(sock);
+      });
+
+      sock.emit('whatever', 'something');
+    });
+
     it('should allow you to || event names', function () {
       var n = 0;
 
@@ -87,7 +100,7 @@ describe('State', function () {
         n += 1;
       });
 
-      s.enter(sock);
+      s.add(sock);
 
       sock.emit('whatever');
       sock.emit('whoever');
@@ -97,7 +110,7 @@ describe('State', function () {
   });
 
 
-  describe('#enter', function () {
+  describe('#add', function () {
 
     beforeEach(function () {
       s = new State();
@@ -107,23 +120,23 @@ describe('State', function () {
 
     it('should throw an error if no socket is provided', function () {
       (function () {
-        s.enter();
+        s.add();
       }).should.throw();
     });
 
-    it('should bind listeners to a socket when the socket enters', function () {
+    it('should bind listeners to a socket when the socket adds', function () {
       var n = 0;
       s.on('whatever', function () {
         n += 1;
       });
-      s.enter(sock);
+      s.add(sock);
       sock.emit('whatever');
       n.should.equal(1);
     });
 
     it('should bind listeners to a socket when a listener is added', function () {
       var n = 0;
-      s.enter(sock);
+      s.add(sock);
       s.on('whatever', function () {
         n += 1;
       });
@@ -132,7 +145,7 @@ describe('State', function () {
     });
 
     it('should be chainable', function () {
-      s.enter(sock).should.equal(s);
+      s.add(sock).should.equal(s);
     });
 
 
@@ -156,27 +169,27 @@ describe('State', function () {
 
       sock = new SocketMock();
 
-      s.enter(sock);
-      bro.enter(sock);
+      s.add(sock);
+      bro.add(sock);
 
       sock.emit('whatever');
       n.should.equal(2);
     });
 
-    it('should enter defaults', function () {
+    it('should add defaults', function () {
       var s = root.substate({
         default: true
       });
-      root.enter(sock);
+      root.add(sock);
 
       s._sockets[sock.id].should.be.ok;
     });
 
-    it('should not enter non-default children', function () {
+    it('should not add non-default children', function () {
       var s = root.substate({
         default: false
       });
-      root.enter(sock);
+      root.add(sock);
 
       assert(s._sockets[sock.id] === undefined);
     });
@@ -186,9 +199,9 @@ describe('State', function () {
 
   describe('#substate', function () {
 
-    it('should enter all ancestor states', function () {
+    it('should add all ancestor states', function () {
       var child = s.substate();
-      child.enter(sock);
+      child.add(sock);
 
       //TODO: not sure how to test this without checking internal state
       // :(
@@ -225,7 +238,7 @@ describe('State', function () {
 
       sock = new SocketMock();
 
-      s.enter(sock);
+      s.add(sock);
       sock.emit('whatever');
       n.should.equal(1);
     });
@@ -249,7 +262,7 @@ describe('State', function () {
 
       sock = new SocketMock();
 
-      c2.enter(sock);
+      c2.add(sock);
       sock.emit('whatever');
       n.should.equal(2);
     });
@@ -265,8 +278,8 @@ describe('State', function () {
 
     it('should broadcast to all sockets', function () {
       var sock2 = new SocketMock();
-      s.enter(sock);
-      s.enter(sock2);
+      s.add(sock);
+      s.add(sock2);
       var n = 0;
       sock.on('whatever', function () {
         n += 1;
@@ -279,8 +292,8 @@ describe('State', function () {
     });
 
     it('should not broadcast to sockets that have left', function () {
-      s.enter(sock);
-      s.exit(sock);
+      s.add(sock);
+      s.remove(sock);
       var n = 0;
       sock.on('whatever', function () {
         n += 1;
@@ -301,8 +314,8 @@ describe('State', function () {
     });
 
     it('should remove all sockets from the state', function () {
-      s.enter(sock);
-      s.enter(sock2);
+      s.add(sock);
+      s.add(sock2);
       s.allExit();
       var n = 0;
       sock.on('whatever', function () {

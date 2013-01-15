@@ -31,16 +31,20 @@ Give it a socket.io instance and you're good to go!
 var io = require('socket.io').listen(80);
 var socketron = require('socketron');
 
-socketron(io)
-.state('lobby', {
-  default: true, // this is where newly connected sockets go
-  on: {
-
-  }
-})
-.state('game', {
-  
-});
+var router = socketron(io).init(io);
+router
+  .state({
+    name: 'lobby',
+    default: true, // this is where newly connected sockets go
+    on: {
+      'start:game': function (message, state, socket) {
+        
+      }
+    }
+  })
+  .state('game', {
+    
+  });
 
 ```
 

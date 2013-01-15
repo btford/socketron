@@ -7,7 +7,7 @@ var State = require('../lib/state');
 var noop = function () {};
 
 // TODO: this
-var SocketMock = require('events').EventEmitter;
+var SocketMock = require('./mock/socket');
 var SocketIOMock = require('events').EventEmitter;
 
 describe('Router', function () {

@@ -4,8 +4,7 @@ var assert = require('should');
 var State = require('../lib/state');
 var noop = function () {};
 
-// TODO: this
-var SocketMock = require('events').EventEmitter;
+var SocketMock = require('./mock/socket');
 
 describe('State', function () {
 
@@ -253,6 +252,67 @@ describe('State', function () {
       c2.enter(sock);
       sock.emit('whatever');
       n.should.equal(2);
+    });
+
+  });
+
+
+  describe('#broadcast', function () {
+    beforeEach(function () {
+      s = root.substate();
+      sock = new SocketMock();
+    });
+
+    it('should broadcast to all sockets', function () {
+      var sock2 = new SocketMock();
+      s.enter(sock);
+      s.enter(sock2);
+      var n = 0;
+      sock.on('whatever', function () {
+        n += 1;
+      });
+      sock2.on('whatever', function () {
+        n += 2;
+      });
+      s.broadcast('whatever');
+      n.should.equal(3);
+    });
+
+    it('should not broadcast to sockets that have left', function () {
+      s.enter(sock);
+      s.exit(sock);
+      var n = 0;
+      sock.on('whatever', function () {
+        n += 1;
+      });
+      s.broadcast('whatever');
+      n.should.equal(0);
+    });
+
+  });
+
+  describe('#allExit', function () {
+
+    var sock2;
+    beforeEach(function () {
+      s = root.substate();
+      sock = new SocketMock();
+      sock2 = new SocketMock();
+    });
+
+    it('should remove all sockets from the state', function () {
+      s.enter(sock);
+      s.enter(sock2);
+      s.allExit();
+      var n = 0;
+      sock.on('whatever', function () {
+        n += 1;
+      });
+      sock2.on('whatever', function () {
+        n += 2;
+      });
+      s.broadcast('whatever');
+      n.should.equal(0);
     });
 
   });

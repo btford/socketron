@@ -1,53 +1,43 @@
 
-var assert = require("should");
+var assert = require('should');
 
 var Router = require('../lib/router');
 var State = require('../lib/state');
 
-// TODO: make this
-var socketMock = {};
+var noop = function () {};
+
+// TODO: this
+var SocketMock = require('events').EventEmitter;
+var SocketIOMock = require('events').EventEmitter;
 
 describe('Router', function () {
 
-  var r;
+  var s, root, sock;
 
   beforeEach(function () {
-    r = new Router(socketMock);
+    root = new Router({
+      io: new SocketIOMock()
+    });
   });
 
   // constructor
   // -----------
 
-  /*
   describe('#new', function () {
-    it('should return -1 when the value is not present', function(){
-      assert.equal(-1, [1,2,3].indexOf(5));
-      assert.equal(-1, [1,2,3].indexOf(0));
+    it('should be an instance of state', function () {
+      root.should.be.an.instanceOf(State);
     });
   });
-  */
 
   // methods
   // -------
 
   describe('#state', function () {
-    it('should return a state', function () {
-      r.state('whatever').should.be.an.instanceOf(State);
+    it('should create a substate when called on a router', function () {
+      var expected = root.substate();
+      var actual = root.getSubstate(expected._name);
+      actual.should.equal(expected);
     });
-  });
-
-
-  describe('#getState', function () {
-    
-    it('should retrieve a set created with #state', function () {
-      var s = r.state('whatever');
-      r.getState('whatever').should.equal(s);
-    });
-
-    it('should return undefined for unregistered names', function () {
-      assert.equal(undefined, r.getState('whatever'));
-    });
-
   });
 
 });

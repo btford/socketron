@@ -5,12 +5,15 @@ var State = require('../lib/state');
 var noop = function () {};
 
 // TODO: this
-
 var SocketMock = require('events').EventEmitter;
 
 describe('State', function () {
 
-  var s, sock;
+  var s, root, sock;
+
+  beforeEach(function () {
+    root = new State();
+  });
 
   // constructor
   // -----------
@@ -42,7 +45,7 @@ describe('State', function () {
   describe('#on', function () {
 
     beforeEach(function () {
-      s = new State();
+      s = root.substate();
       sock = new SocketMock();
     });
 
@@ -132,12 +135,59 @@ describe('State', function () {
     it('should be chainable', function () {
       s.enter(sock).should.equal(s);
     });
+
+
+    it('should not be able to be in two sibling states at once', function () {
+      var n = 0;
+      var bro1 = s.substate({
+        on: {
+          whatever: function () { // this should not be called
+            n += 1;
+          }
+        }
+      });
+
+      var bro = s.substate({
+        on: {
+          whatever: function () { // this should be called
+            n += 2;
+          }
+        }
+      });
+
+      sock = new SocketMock();
+
+      s.enter(sock);
+      bro.enter(sock);
+
+      sock.emit('whatever');
+      n.should.equal(2);
+    });
+
+    it('should enter defaults', function () {
+      var s = root.substate({
+        default: true
+      });
+      root.enter(sock);
+
+      s._sockets[sock.id].should.be.ok;
+    });
+
+    it('should not enter non-default children', function () {
+      var s = root.substate({
+        default: false
+      });
+      root.enter(sock);
+
+      assert(s._sockets[sock.id] === undefined);
+    });
+
   });
 
 
   describe('#substate', function () {
 
-    it('should call enter of all parents first', function () {
+    it('should enter all ancestor states', function () {
       var child = s.substate();
       child.enter(sock);
 
@@ -152,7 +202,7 @@ describe('State', function () {
   describe('#state', function () {
 
     beforeEach(function () {
-      s = new State();
+      s = root.substate();
       sock = new SocketMock();
     });
 
@@ -179,6 +229,30 @@ describe('State', function () {
       s.enter(sock);
       sock.emit('whatever');
       n.should.equal(1);
+    });
+
+    it('should create a sibling state that does not affect its peers', function () {
+      var n = 0;
+      var c1 = s.substate({
+        on: {
+          whatever: function () { // this should not be called
+            n += 1;
+          }
+        }
+      });
+      var c2 = c1.state({
+        on: {
+          whatever: function () { // this should be called
+            n += 2;
+          }
+        }
+      });
+
+      sock = new SocketMock();
+
+      c2.enter(sock);
+      sock.emit('whatever');
+      n.should.equal(2);
     });
 
   });

@@ -304,7 +304,7 @@ describe('State', function () {
 
   });
 
-  describe('#allExit', function () {
+  describe('#removeAll', function () {
 
     var sock2;
     beforeEach(function () {
@@ -316,7 +316,7 @@ describe('State', function () {
     it('should remove all sockets from the state', function () {
       s.add(sock);
       s.add(sock2);
-      s.allExit();
+      s.removeAll();
       var n = 0;
       sock.on('whatever', function () {
         n += 1;

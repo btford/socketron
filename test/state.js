@@ -144,8 +144,9 @@ describe('State', function () {
       n.should.equal(1);
     });
 
-    it('should be chainable', function () {
-      s.add(sock).should.equal(s);
+    it('should return success state', function () {
+      s.add(sock).should.be.ok;
+      s.add(sock).should.not.be.ok;
     });
 
 
@@ -169,7 +170,77 @@ describe('State', function () {
 
       sock = new SocketMock();
 
-      s.add(sock);
+      bro1.add(sock);
+      bro.add(sock);
+
+      sock.emit('whatever');
+      n.should.equal(2);
+    });
+
+
+    it('should be able to leave and join siblings', function () {
+      var n = 0;
+      var bro1 = s.substate({
+        on: {
+          whatever: function () { // this should not be called
+            n += 1;
+          }
+        }
+      });
+
+      var bro = s.substate({
+        on: {
+          whatever: function () { // this should be called
+            n += 2;
+          }
+        }
+      });
+
+      sock = new SocketMock();
+
+      bro.add(sock);
+      bro1.add(sock);
+      bro.add(sock);
+
+      sock.emit('whatever');
+      n.should.equal(2);
+    });
+
+    it('should be able to leave and join back', function () {
+      var n = 0;
+
+      var bro = s.substate({
+        on: {
+          whatever: function () { // this should be called
+            n += 2;
+          }
+        }
+      });
+
+      sock = new SocketMock();
+
+      bro.add(sock);
+      bro.remove(sock);
+      bro.add(sock);
+
+      sock.emit('whatever');
+      n.should.equal(2);
+    });
+
+    it('should not join the same lobby twice', function () {
+      var n = 0;
+
+      var bro = s.substate({
+        on: {
+          whatever: function () { // this should be called
+            n += 2;
+          }
+        }
+      });
+
+      sock = new SocketMock();
+
+      bro.add(sock);
       bro.add(sock);
 
       sock.emit('whatever');
@@ -192,6 +263,35 @@ describe('State', function () {
       root.add(sock);
 
       assert(s._sockets[sock.id] === undefined);
+    });
+
+  });
+
+  describe('#remove', function () {
+
+    beforeEach(function () {
+      s = new State();
+      sock = new SocketMock();
+      sock.id = 'test';
+      s.add(sock);
+    });
+
+    it('should return success state', function () {
+      s.remove(sock).should.be.ok;
+      s.remove(sock).should.not.be.ok;
+    });
+
+    it('should unbind listeners', function () {
+      var n = 0;
+
+      s.on('whatever', function () { // this should be called
+        n += 1;
+      });
+
+      s.remove(sock);
+
+      sock.emit('whatever');
+      n.should.equal(0);
     });
 
   });

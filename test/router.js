@@ -40,4 +40,11 @@ describe('Router', function () {
     });
   });
 
+  describe('#remove', function () {
+    it('should not work when called externally', function () {
+      // TODO:
+      //root.add
+    });
+  });
+
 });

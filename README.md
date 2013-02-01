@@ -1,6 +1,7 @@
-O hapless Github wanderer: this is but a work in progress.
-
 # Socketron
+
+[![Build Status](https://travis-ci.org/btford/socketron.png)](https://travis-ci.org/btford/socketron)
+
 An event-driven state machine for routing sockets and stuff.
 
 [It's like this](http://en.wikipedia.org/wiki/Event-driven_finite-state_machine) kinda.

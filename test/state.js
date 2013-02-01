@@ -265,6 +265,18 @@ describe('State', function () {
       assert(s._sockets[sock.id] === undefined);
     });
 
+    it('should fire $add', function () {
+      var n = 0;
+      s.on('$add', function (state, socket) {
+        s.should.equal(this);
+        s.should.equal(state);
+        sock.should.equal(sock);
+        n += 1;
+      });
+      s.add(sock);
+      n.should.equal(1);
+    });
+
   });
 
   describe('#remove', function () {
@@ -292,6 +304,19 @@ describe('State', function () {
 
       sock.emit('whatever');
       n.should.equal(0);
+    });
+
+
+    it('should fire $remove', function () {
+      var n = 0;
+      s.on('$remove', function (state, socket) {
+        s.should.equal(this);
+        s.should.equal(state);
+        sock.should.equal(sock);
+        n += 1;
+      });
+      s.remove(sock);
+      n.should.equal(1);
     });
 
   });

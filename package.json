@@ -4,7 +4,8 @@
   "description": "routes for sockets",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "docs": "node gen-docs.js"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,9 @@
     "socket.io": "~0.9.13"
   },
   "devDependencies": {
+    "docco": "~0.4.0",
+    "ejs": "~0.8.3",
+    "marked": "~0.2.7",
     "should": "~1.2.1",
     "mocha": "~1.8.1"
   }

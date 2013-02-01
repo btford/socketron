@@ -277,7 +277,25 @@ describe('State', function () {
       n.should.equal(1);
     });
 
+    it('should fire $add of parent states before firing $add of children', function () {
+      var n = 0;
+      var child = s.substate({
+        on: {
+          $add: function () {
+            n *= 2;
+          }
+        }
+      });
+      s.on('$add', function (state, socket) {
+        n += 2;
+      });
+      child.add(sock);
+
+      n.should.equal(4);
+    });
+
   });
+
 
   describe('#remove', function () {
 
@@ -307,7 +325,7 @@ describe('State', function () {
     });
 
 
-    it('should fire $remove', function () {
+    it('should fire $remove of children states before parents', function () {
       var n = 0;
       s.on('$remove', function (state, socket) {
         s.should.equal(this);
@@ -317,6 +335,27 @@ describe('State', function () {
       });
       s.remove(sock);
       n.should.equal(1);
+    });
+
+    it('should fire $remove', function () {
+      var n = 0;
+      var child = s.substate({
+        on: {
+          $remove: function () {
+            n += 2;
+          }
+        }
+      });
+      s.on('$remove', function (state, socket) {
+        n *= 2;
+      });
+      n.should.equal(0);
+      
+      child.add(sock);
+      n.should.equal(0);
+      
+      s.remove(sock);
+      n.should.equal(4);
     });
 
   });

@@ -57,5 +57,22 @@ router
 
 ```
 
+## Dev Guide
+
+### Tests
+Run with `npm`.
+
+```bash
+npm test
+```
+
+### Docs
+Requires docco.
+
+Run with npm:
+```bash
+npm run docs
+```
+
 ## License
 MIT

@@ -5,7 +5,6 @@ var State = require('../lib/state');
 var noop = function () {};
 
 var SocketMock = require('./mock/socket');
-
 describe('State', function () {
 
   var s, root, sock;

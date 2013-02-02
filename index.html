@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Socketron</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <link href='http://fonts.googleapis.com/css?family=Iceland' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" media="all" href="main.css">
+</head>
+<body>
+  <div id="container">
+    <header>
+      <h1>Socketron</h1>
+    </header>
+    <div class="readme">
+      <h1>Socketron</h1>
+<p><a href="https://travis-ci.org/btford/socketron"><img src="https://travis-ci.org/btford/socketron.png" alt="Build Status"></a>
+
+</p>
+<p>Socketron is an <a href="http://en.wikipedia.org/wiki/Event-driven_finite-state_machine">event-driven state machine</a> for routing sockets.
+
+</p>
+<h2>Motivation</h2>
+<p>I found when working with socket.io, that:
+
+</p>
+<pre><code class="lang-javascript">io.sockets.on(&#39;connection&#39;, function (socket) {
+  var someState = { ... };
+  socket.on(&#39;this&#39;, function (...) { ... });
+  socket.on(&#39;that&#39;, function (...) { ... });
+  socket.on(&#39;the other thing&#39;, function (...) { ... });
+  // ...
+});</code></pre>
+<p>Didn&#39;t scale very well. Organization became difficult, and much spaghetti code ensued.
+
+</p>
+<h2>Install</h2>
+<p>Install with npm:
+</p>
+<pre><code class="lang-bash">npm install socketron</code></pre>
+<h2>Use</h2>
+<p>Give it a socket.io instance and you&#39;re good to go!
+
+</p>
+<h2>Example</h2>
+<pre><code class="lang-javascript">var io = require(&#39;socket.io&#39;).listen(80);
+var socketron = require(&#39;socketron&#39;);
+
+var router = socketron.init(io);
+router
+  .state({
+    name: &#39;lobby&#39;,
+    default: true, // this is where newly connected sockets go
+    on: {
+      &#39;start:game&#39;: function (message, state, socket) {
+        state.moveAllTo(state.parent().getSubstate(&#39;game&#39;));
+      }
+    }
+  })
+  .state(&#39;game&#39;, {
+    &#39;$add&#39;: function (state, socket) {
+      state.players[socket.id] = { x: 0, y: 0};
+    },
+    &#39;move:player&#39;: function (message, state, socket) {
+      state.players[socket.id].x = message.x;
+      state.players[socket.id].y = message.y;
+      state.broadcast(&#39;update:player&#39;, state.players[socket.id]);
+    }
+  });</code></pre>
+<h2>Dev Guide</h2>
+<h3>Tests</h3>
+<p>Run with <code>npm</code>.
+
+</p>
+<pre><code class="lang-bash">npm test</code></pre>
+<h3>Docs</h3>
+<p>Requires docco.
+
+</p>
+<p>Run with npm:
+</p>
+<pre><code class="lang-bash">npm run docs</code></pre>
+<h2>License</h2>
+<p>MIT
+</p>
+
+    </div>
+    <footer>
+      <p>©2013 Brian Ford | Socketron may be freely distributed under the MIT license.</p>
+    </footer>
+  </div>
+  <a href="https://github.com/btford/socketron"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_darkblue_121621.png" alt="Fork me on GitHub"></a>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html> <html lang="en"> <head>   <title>Socketron/state.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link href='http://fonts.googleapis.com/css?family=Iceland' rel='stylesheet' type='text/css'>   <link rel="stylesheet" media="all" href="docco.css"> </head> <body>   <div id="container">     <header>       <h1>Socketron</h1>     </header>     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="router.html">                 router.js               </a>                                           <a class="source" href="state.html">                 state.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               state.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">unnamedId</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// used to give states unique names</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p><code>$add</code> and <code>$remove</code> are events reserved by Socketron for when a socket
+is added or removed from the state.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">reservedEventNames</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="s1">&#39;$add&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;$remove&#39;</span>
+<span class="p">];</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <h2>State</h2>
+
+<p>Define the <code>State</code> prototype.
+This is the bread and butter of Socketron.</p>
+
+<h3>Terms</h3>
+
+<p>"State" in this sense refers to a <a href="http://en.wikipedia.org/wiki/Finite-state_machine" title="Wikipedia - Finite-state machine">state machine</a> state, not <a href="http://en.wikipedia.org/wiki/State_" title="computer_science)#Program_state &quot;Wikipedia - Program state">program/application state</a>.
+<em>Application state</em> is hereby refereed to as <em>model/models</em> to avoid confusion.</p>
+
+<h3>Protips</h3>
+
+<ul>
+<li>properties prefixed with an underscore are "private" ex: <code>_events</code>.
+You probably want to avoid messing with these unless you are careful.</li>
+<li>Unprefixed properties are all yours.</li>
+</ul>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">State</span> <span class="o">=</span> <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">config</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="nx">config</span> <span class="o">=</span> <span class="nx">config</span> <span class="o">||</span> <span class="p">{};</span> <span class="c1">// TODO: deep copy?</span>
+
+  <span class="k">this</span><span class="p">.</span><span class="nx">_events</span> <span class="o">=</span> <span class="p">{};</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span> <span class="o">=</span> <span class="p">{};</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span> <span class="o">=</span> <span class="p">{};</span>
+
+  <span class="k">this</span><span class="p">.</span><span class="nx">model</span> <span class="o">=</span> <span class="nx">config</span><span class="p">.</span><span class="nx">model</span> <span class="o">||</span> <span class="p">{};</span>
+
+  <span class="k">this</span><span class="p">.</span><span class="nx">_name</span> <span class="o">=</span> <span class="nx">config</span><span class="p">.</span><span class="nx">name</span> <span class="o">||</span> <span class="p">(</span><span class="s1">&#39;__unnamed&#39;</span> <span class="o">+</span> <span class="p">(</span><span class="nx">unnamedId</span><span class="o">++</span><span class="p">));</span>
+
+  <span class="k">this</span><span class="p">.</span><span class="nx">_default</span> <span class="o">=</span> <span class="nx">config</span><span class="p">.</span><span class="nx">_default</span> <span class="o">||</span> <span class="kc">null</span><span class="p">;</span>
+
+  <span class="k">this</span><span class="p">.</span><span class="nx">_parent</span> <span class="o">=</span> <span class="nx">config</span><span class="p">.</span><span class="nx">_parent</span> <span class="o">||</span> <span class="kc">null</span><span class="p">;</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">_router</span> <span class="o">=</span> <span class="nx">config</span><span class="p">.</span><span class="nx">_router</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span> <span class="nx">config</span><span class="p">.</span><span class="nx">on</span> <span class="o">===</span> <span class="s1">&#39;object&#39;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">handlerName</span> <span class="k">in</span> <span class="nx">config</span><span class="p">.</span><span class="nx">on</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">config</span><span class="p">.</span><span class="nx">on</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">handlerName</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">handlerName</span><span class="p">,</span> <span class="nx">config</span><span class="p">.</span><span class="nx">on</span><span class="p">[</span><span class="nx">handlerName</span><span class="p">]);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <h2>on()</h2>
+
+<p>Register a new handler for this state</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">on</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">fn</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">name</span> <span class="o">||</span> <span class="o">!</span><span class="nx">fn</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;Invalid arguments&quot;</span><span class="p">);</span>
+  <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>Allow registering the same handler to multiple event names.
+Event names must be seperated by <code>||</code> for this to work.
+Note the whitespace there: "space pipe pipe space"</p>
+
+<p>Ex: <code>$remove || leave</code></p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">if</span> <span class="p">(</span><span class="nx">name</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s1">&#39; || &#39;</span><span class="p">)</span> <span class="o">!==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">name</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39; || &#39;</span><span class="p">).</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">fn</span><span class="p">);</span>
+    <span class="p">},</span> <span class="k">this</span><span class="p">);</span>
+    <span class="k">return</span><span class="p">;</span>
+  <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>don't bind reserved events to the socket;
+socketron states will call those on the add/remove of a socket to the state</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">if</span> <span class="p">(</span><span class="nx">reservedEventNames</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="o">!==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">=</span> <span class="nx">fn</span><span class="p">;</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>if that event name is claimed, unregister it first</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">socketId</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">[</span><span class="nx">name</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="nx">socketId</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">socketId</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socketId</span><span class="p">].</span><span class="nx">removeListener</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">[</span><span class="nx">name</span><span class="p">]);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="kd">var</span> <span class="nx">thisState</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">hackedFn</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">message</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">fn</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="nx">thisState</span><span class="p">,</span> <span class="p">[</span><span class="nx">message</span><span class="p">,</span> <span class="nx">thisState</span><span class="p">,</span> <span class="k">this</span><span class="p">]);</span>
+  <span class="p">};</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="nx">socketId</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">socketId</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socketId</span><span class="p">].</span><span class="nx">on</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">hackedFn</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <h2>add(socket)</h2>
+
+<p>Add <code>socket</code> to this state.
+Returns a boolean corresponding to success or failure.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">add</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">socket</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">socket</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;Invalid arguments&quot;</span><span class="p">);</span>
+  <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>Return <code>false</code> if <code>socket</code> is already in this state.
+This prevents a socket from being added to this state twice.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socket</span><span class="p">.</span><span class="nx">id</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socket</span><span class="p">.</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="nx">socket</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <p>Make sure a socket is added to all of this state's ancestors first.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_parent</span><span class="p">)</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <p>TODO: this implementation reaches into the parent state via a private API
+remove siblings</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">_parent</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="nx">socket</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">siblingName</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_parent</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">siblingName</span> <span class="o">===</span> <span class="k">this</span><span class="p">.</span><span class="nx">_name</span><span class="p">)</span> <span class="p">{</span>
+          <span class="k">continue</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_parent</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">siblingName</span><span class="p">))</span> <span class="p">{</span>
+          <span class="k">this</span><span class="p">.</span><span class="nx">_parent</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">[</span><span class="nx">siblingName</span><span class="p">].</span><span class="nx">remove</span><span class="p">(</span><span class="nx">socket</span><span class="p">);</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <p>If there's an <code>$add</code> event registered, fire it now</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">.</span><span class="nx">$add</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">.</span><span class="nx">$add</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="p">[</span><span class="k">this</span><span class="p">,</span> <span class="nx">socket</span><span class="p">]);</span>
+  <span class="p">}</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">handlerName</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">handlerName</span><span class="p">))</span> <span class="p">{</span>
+      <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">handlerName</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">[</span><span class="nx">handlerName</span><span class="p">]);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_default</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">addToDefault</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">childName</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">childName</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">[</span><span class="nx">childName</span><span class="p">].</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socket</span><span class="p">.</span><span class="nx">id</span><span class="p">])</span> <span class="p">{</span>
+          <span class="nx">addToDefault</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+          <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">addToDefault</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">_default</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="nx">socket</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <h2>remove(socket)</h2>
+
+<p>Remove <code>socket</code> from this state.
+Returns a boolean corresponding to success or failure.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">remove</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">socket</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">socket</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;Invalid arguments&quot;</span><span class="p">);</span>
+  <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <p>If the socket's not in this state, return <code>false</code>.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socket</span><span class="p">.</span><span class="nx">id</span><span class="p">])</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">childName</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">childName</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">[</span><span class="nx">childName</span><span class="p">].</span><span class="nx">remove</span><span class="p">(</span><span class="nx">socket</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+
+  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">.</span><span class="nx">$remove</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">.</span><span class="nx">$remove</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="p">[</span><span class="k">this</span><span class="p">,</span> <span class="nx">socket</span><span class="p">]);</span>
+  <span class="p">}</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">handlerName</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">handlerName</span><span class="p">))</span> <span class="p">{</span>
+      <span class="nx">socket</span><span class="p">.</span><span class="nx">removeListener</span><span class="p">(</span><span class="nx">handlerName</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">_events</span><span class="p">[</span><span class="nx">handlerName</span><span class="p">]);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">delete</span> <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socket</span><span class="p">.</span><span class="nx">id</span><span class="p">];</span>
+  <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <h2>removeAll()</h2>
+
+<p>remove all sockets from this state</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">removeAll</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">socketId</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">socketId</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">remove</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socketId</span><span class="p">]);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-16">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-16">&#182;</a>               </div>               <h2>broadcast()</h2>
+
+<p>broadcast to each socket in this state
+arguments match socket.io#socket#emit</p>
+
+<p>TOTEST</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">broadcast</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">socketId</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">socketId</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socketId</span><span class="p">].</span><span class="nx">emit</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socketId</span><span class="p">],</span> <span class="nx">arguments</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-17">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-17">&#182;</a>               </div>               <h2>moveAllTo()</h2>
+
+<p>move all of this state's sockets to a new state</p>
+
+<p>TOTEST</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">moveAllTo</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">newState</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">socketId</span> <span class="k">in</span> <span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">socketId</span><span class="p">))</span> <span class="p">{</span>
+      <span class="nx">newState</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_sockets</span><span class="p">[</span><span class="nx">socketId</span><span class="p">]);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-18">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-18">&#182;</a>               </div>               <h2>state()</h2>
+
+<p>create a state which is a sibling to this state</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">state</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">config</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">_parent</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;No parent; cannot make sibling&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_parent</span><span class="p">.</span><span class="nx">substate</span><span class="p">(</span><span class="nx">config</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-19">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-19">&#182;</a>               </div>               <h2>substate()</h2>
+
+<p>create a substate of this state</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">substate</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">config</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">config</span> <span class="o">=</span> <span class="nx">config</span> <span class="o">||</span> <span class="p">{};</span>
+  <span class="nx">config</span><span class="p">.</span><span class="nx">_parent</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+  <span class="nx">config</span><span class="p">.</span><span class="nx">_router</span> <span class="o">=</span> <span class="nx">config</span><span class="p">.</span><span class="nx">_router</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">_router</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">StateType</span> <span class="o">=</span> <span class="nx">config</span><span class="p">.</span><span class="nx">type</span> <span class="o">||</span> <span class="nx">State</span><span class="p">;</span>
+
+  <span class="kd">var</span> <span class="nx">s</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">StateType</span><span class="p">(</span><span class="nx">config</span><span class="p">);</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">[</span><span class="nx">s</span><span class="p">.</span><span class="nx">_name</span><span class="p">]</span> <span class="o">=</span> <span class="nx">s</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="nx">config</span><span class="p">.</span><span class="k">default</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_default</span> <span class="o">=</span> <span class="nx">s</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="nx">s</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-20">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-20">&#182;</a>               </div>               <h2>destroySubstate()</h2>
+
+<p>delete a state's substate.</p>
+
+<p>TOTEST</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">destroySubstate</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">stateName</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">[</span><span class="nx">stateName</span><span class="p">].</span><span class="nx">removeAll</span><span class="p">();</span>
+  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">.</span><span class="nx">_destroy</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">.</span><span class="nx">_destroy</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="k">delete</span> <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">[</span><span class="nx">stateName</span><span class="p">];</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-21">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-21">&#182;</a>               </div>               <h2>getSubstate()</h2>
+
+<p>Returns the state with the given name, else <code>undefined</code></p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getSubstate</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">stateName</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">[</span><span class="nx">stateName</span><span class="p">];</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-22">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-22">&#182;</a>               </div>               <h2>getPath()</h2>
+
+<p>Get a state based on its relative path.</p>
+
+<h3>Protips</h3>
+
+<ul>
+<li>Paths are separated by <code>/</code></li>
+<li><code>getPath</code> does not do parent paths (yet)
+ex: <code>../</code></li>
+<li>Prefix a path with with <code>/</code> to start at root.
+ex: <code>/a/b/c</code></li>
+</ul>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getPath</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">path</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="nx">path</span> <span class="k">instanceof</span> <span class="nb">Array</span><span class="p">))</span> <span class="p">{</span>
+    <span class="nx">path</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="kd">var</span> <span class="nx">first</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">[</span><span class="nx">first</span><span class="p">];</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_subStates</span><span class="p">[</span><span class="nx">first</span><span class="p">].</span><span class="nx">getSubstate</span><span class="p">(</span><span class="nx">path</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-23">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-23">&#182;</a>               </div>               <h2>parent()</h2>
+
+<p>get parent state</p>
+
+<p>TOTEST</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">parent</span> <span class="o">=</span> <span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getParent</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_parent</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-24">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-24">&#182;</a>               </div>               <h2>router()</h2>
+
+<p>get router</p>
+
+<p>TOTEST</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">router</span> <span class="o">=</span> <span class="nx">State</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getRouter</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_router</span><span class="p">;</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>     <footer>       <p>©2013 Brian Ford | Socketron may be freely distributed under the MIT license.</p>     </footer>   </div> </body> </html> 

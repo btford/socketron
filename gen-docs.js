@@ -25,6 +25,7 @@ fs.writeFileSync('docs/index.html', html);
 
 // run docco
 require('docco').run([
+  '', '',
   '--css', 'site/main.css',
   '--template','site/docco.jst',
   'lib/*.js']);

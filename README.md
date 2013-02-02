@@ -25,9 +25,6 @@ Install with npm:
 npm install socketron
 ```
 
-## Use
-Give it a socket.io instance and you're good to go!
-
 ## Example
 ```javascript
 var io = require('socket.io').listen(80);
@@ -57,16 +54,20 @@ router
 
 ```
 
-## Dev Guide
+## API
+[Annotated source](http://btford.github.com/socketron/state.html)
 
-### Tests
+## Developer's Guide
+Wanna hack on Socketron?
+
+### Running Tests
 Run with `npm`.
 
 ```bash
 npm test
 ```
 
-### Docs
+### Generating Docs
 Requires docco.
 
 Run with npm:

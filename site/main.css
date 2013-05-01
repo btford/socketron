@@ -215,6 +215,7 @@ header h1 {
   font-size: 4em;
   font-family: 'Iceland', cursive;
   color: #eee;
+  text-shadow: #7e8aa2 3px 4px;
 }
 footer {
   text-align: center;

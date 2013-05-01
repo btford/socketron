@@ -2,7 +2,9 @@
 
 [![Build Status](https://travis-ci.org/btford/socketron.png)](https://travis-ci.org/btford/socketron)
 
-Socketron is an [event-driven state machine](http://en.wikipedia.org/wiki/Event-driven_finite-state_machine) for routing sockets.
+Socketron is an [event-driven state machine](http://en.wikipedia.org/wiki/Event-driven_finite-state_machine) for routing messages to and from WebSockets.
+
+It's an abstraction layer directly above [Socket.IO](http://socket.io).
 
 ## Motivation
 I found when working with socket.io, that:
@@ -17,7 +19,16 @@ io.sockets.on('connection', function (socket) {
 });
 ```
 
-Didn't scale very well. Organization became difficult, and much spaghetti code ensued.
+Didn't scale very well. I wanted to be able to add/remove listeners depending on a user's state.
+
+Organization became difficult, and much spaghetti code ensued.
+
+My primary focus is to make it easy to write things like games and chat rooms where you have users connected via socket in some associated room, level, or group.
+
+## Concepts
+
+### State
+Not application state, but state machine state.
 
 ## Install
 Install with npm:
@@ -56,6 +67,9 @@ router
 
 ## API
 [Annotated source](http://btford.github.com/socketron/state.html)
+
+## Tests
+Socketron includes a full test suite. See the [annotated source](http://btford.github.com/socketron/test/state.html) for more.
 
 ## Developer's Guide
 Wanna hack on Socketron?

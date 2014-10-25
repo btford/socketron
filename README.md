@@ -52,14 +52,17 @@ router
       }
     }
   })
-  .state('game', {
-    '$add': function (state, socket) {
-      state.players[socket.id] = { x: 0, y: 0};
-    },
-    'move:player': function (message, state, socket) {
-      state.players[socket.id].x = message.x;
-      state.players[socket.id].y = message.y;
-      state.broadcast('update:player', state.players[socket.id]);
+  .state({
+    name: 'game',
+    on: {
+      '$add': function (state, socket) {
+        state.players[socket.id] = { x: 0, y: 0};
+      },
+      'move:player': function (message, state, socket) {
+        state.players[socket.id].x = message.x;
+        state.players[socket.id].y = message.y;
+        state.broadcast('update:player', state.players[socket.id]);
+      }
     }
   });
 
